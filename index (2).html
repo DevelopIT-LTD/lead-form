@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Форма заявки</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+        }
+
+        /* Фоновый градиент */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            
+            /* Водный градиент + картинка поверх */
+            background: 
+                url('https://i.imgur.com/diAfbW9.png') center/cover no-repeat,
+                linear-gradient(135deg, #0891b2 0%, #06b6d4 25%, #0e7490 50%, #0891b2 75%, #06b6d4 100%);
+            
+            filter: blur(8px);
+            transform: scale(1.1);
+            z-index: 1;
+        }
+
+        /* Canvas для волн - ПОВЕРХ фона */
+        #waterCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: auto;
+        }
+
+        /* Контейнер формы - ЕЩЁ ВЫШЕ */
+        .form-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3;
+            pointer-events: none;
+            padding: 20px;
+        }
+
+        /* Glassmorphism контейнер */
+        .container {
+            width: 100%;
+            max-width: 380px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 
+                        0 0 80px rgba(255, 255, 255, 0.1);
+            padding: 25px 22px;
+            animation: fadeIn 0.6s ease-in;
+            pointer-events: auto;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: white;
+            margin-bottom: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .optional {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85em;
+            font-weight: 400;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
+            color: white;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            font-weight: 500;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        select {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 45px;
+        }
+
+        select option {
+            background: rgba(40, 40, 80, 0.98);
+            color: white;
+            padding: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+            margin-top: 5px;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.3));
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(255, 255, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Сообщение об успехе */
+        .success-message {
+            display: none;
+            text-align: center;
+            color: white;
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        .success-message h2 {
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+            font-weight: 600;
+        }
+
+        .success-message p {
+            font-size: 1.2em;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+            line-height: 1.6;
+        }
+
+        .checkmark {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: block;
+            stroke-width: 3;
+            stroke: white;
+            stroke-miterlimit: 10;
+            margin: 20px auto;
+            animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
+        }
+
+        .checkmark-circle {
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            stroke-width: 3;
+            stroke: white;
+            fill: none;
+            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+
+        .checkmark-check {
+            transform-origin: 50% 50%;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+        }
+
+        @keyframes stroke {
+            100% { stroke-dashoffset: 0; }
+        }
+
+        @keyframes scale {
+            0%, 100% { transform: none; }
+            50% { transform: scale3d(1.1, 1.1, 1); }
+        }
+
+        @keyframes fill {
+            100% { box-shadow: inset 0px 0px 0px 40px rgba(255, 255, 255, 0.3); }
+        }
+
+        .error-message {
+            color: #ffcccc;
+            font-size: 0.9em;
+            margin-top: 8px;
+            display: none;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 18px;
+                width: 90%;
+                max-width: 360px;
+            }
+            
+            h1 {
+                font-size: 1.35em;
+                margin-bottom: 18px;
+            }
+
+            input, select, button {
+                font-size: 16px;
+                padding: 9px 11px;
+            }
+
+            .form-group {
+                margin-bottom: 13px;
+            }
+
+            button {
+                padding: 11px;
+            }
+
+            label {
+                font-size: 0.88em;
+                margin-bottom: 5px;
+            }
+
+            .success-message h2 {
+                font-size: 1.7em;
+            }
+
+            .success-message p {
+                font-size: 1.05em;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .container {
+                padding: 18px 15px;
+                max-width: 320px;
+            }
+
+            h1 {
+                font-size: 1.25em;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            input, select, button {
+                font-size: 15px;
+                padding: 8px 10px;
+            }
+
+            label {
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Фон -->
+    <div class="background"></div>
+    
+    <!-- Canvas для волн -->
+    <canvas id="waterCanvas"></canvas>
+
+    <!-- Форма -->
+    <div class="form-wrapper">
+        <div class="container">
+            <form id="leadForm">
+                <h1>Заявка на вакансію</h1>
+                
+                <div class="form-group">
+                    <label for="name">Ім'я</label>
+                    <input type="text" id="name" name="name" placeholder="Введіть ваше ім'я" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="age">Вік</label>
+                    <input type="number" id="age" name="age" placeholder="Введіть ваш вік" required min="14" max="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="city">Місто</label>
+                    <input type="text" id="city" name="city" placeholder="Введіть ваше місто" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Телефон <span class="optional">(необов'язково)</span></label>
+                    <input type="tel" id="phone" name="phone" placeholder="+380 XX XXX XX XX">
+                </div>
+
+                <div class="form-group">
+                    <label for="telegram">Тег Telegram</label>
+                    <input type="text" id="telegram" name="telegram" placeholder="@username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="vacancy">Вакансія</label>
+                    <select id="vacancy" name="vacancy" required>
+                        <option value="">Оберіть вакансію</option>
+                        <option value="Sale Manager">Sale Manager</option>
+                        <option value="Оператор чату">Оператор чату</option>
+                        <option value="Менеджер з продажу">Менеджер з продажу</option>
+                        <option value="Chat Manager">Chat Manager</option>
+                        <option value="Administrator">Administrator</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="submitBtn">Відправити заявку</button>
+                <div class="error-message" id="errorMessage"></div>
+            </form>
+
+            <!-- Сообщение об успехе -->
+            <div class="success-message" id="successMessage">
+                <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                    <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+                <h2>Дякуємо!</h2>
+                <p>Очікуйте зворотного зв'язку.<br>Гарного дня!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === ВОДНЫЕ ВОЛНЫ ===
+        const canvas = document.getElementById('waterCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Размеры canvas
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let ripples = [];
+
+        class WaterRipple {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.r = 0;
+                this.maxR = 300;
+                this.speed = 3;
+                this.life = 1;
+            }
+
+            update() {
+                this.r += this.speed;
+                this.life = 1 - (this.r / this.maxR);
+            }
+
+            draw() {
+                if (this.life <= 0) return;
+
+                ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.8})`;
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.stroke();
+
+                if (this.r > 20) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.5})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.r - 15, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                if (this.r > 40) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${this.life * 0.3})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.r - 30, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Центральное свечение
+                if (this.r < 100) {
+                    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.r);
+                    grad.addColorStop(0, `rgba(255, 255, 255, ${this.life * 0.4})`);
+                    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(this.x - this.r, this.y - this.r, this.r * 2, this.r * 2);
+                }
+            }
+
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+
+        function animate() {
+            // Прозрачная заливка вместо чёрной
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                ripples[i].update();
+                ripples[i].draw();
+                if (ripples[i].isDead()) {
+                    ripples.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function addRipple(x, y) {
+            ripples.push(new WaterRipple(x, y));
+        }
+
+        // СОБЫТИЯ
+        canvas.addEventListener('click', function(e) {
+            addRipple(e.clientX, e.clientY);
+        });
+
+        let drawing = false;
+        let lastTime = 0;
+
+        canvas.addEventListener('mousedown', function(e) {
+            drawing = true;
+            addRipple(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('mouseup', function() {
+            drawing = false;
+        });
+
+        canvas.addEventListener('mousemove', function(e) {
+            if (drawing && Date.now() - lastTime > 50) {
+                addRipple(e.clientX, e.clientY);
+                lastTime = Date.now();
+            }
+        });
+
+        // Touch
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            drawing = true;
+            const t = e.touches[0];
+            addRipple(t.clientX, t.clientY);
+        });
+
+        canvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            drawing = false;
+        });
+
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            if (Date.now() - lastTime > 50) {
+                const t = e.touches[0];
+                addRipple(t.clientX, t.clientY);
+                lastTime = Date.now();
+            }
+        });
+
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        animate();
+
+        // Стартовые волны
+        setTimeout(() => addRipple(canvas.width / 2, canvas.height / 2), 500);
+        setTimeout(() => addRipple(canvas.width / 2 - 80, canvas.height / 2 + 60), 900);
+        setTimeout(() => addRipple(canvas.width / 2 + 80, canvas.height / 2 - 60), 1300);
+
+        // === ФОРМА ===
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSTwJbWzFORXFwBgh6Jrkc1BHf6kKYQUB2qbseoJbzGPNqmtCUUvPf8rY0tIxzDBjDig/exec';
+        const form = document.getElementById('leadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Відправка...';
+            errorMessage.style.display = 'none';
+
+            const formData = new FormData(form);
+            const data = {
+                name: formData.get('name'),
+                age: formData.get('age'),
+                city: formData.get('city'),
+                phone: formData.get('phone') || 'Не вказано',
+                telegram: formData.get('telegram'),
+                vacancy: formData.get('vacancy')
+            };
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                // no-cors не дает читать ответ, но если дошли сюда - запрос отправлен
+                form.style.display = 'none';
+                successMessage.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Помилка:', error);
+                errorMessage.textContent = 'Сталася помилка при відправці. Спробуйте ще раз.';
+                errorMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Відправити заявку';
+            }
+        });
+
+        const telegramInput = document.getElementById('telegram');
+        telegramInput.addEventListener('input', (e) => {
+            let value = e.target.value;
+            if (value && !value.startsWith('@')) {
+                e.target.value = '@' + value;
+            }
+        });
+    </script>
+</body>
+</html>
